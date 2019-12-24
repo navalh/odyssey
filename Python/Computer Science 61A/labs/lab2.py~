@@ -1,0 +1,8 @@
+def funky(k):
+    while k < 50:
+        if k % 2 == 0:
+            k += 13
+        else:
+            k += 1
+        print(k)
+    return k

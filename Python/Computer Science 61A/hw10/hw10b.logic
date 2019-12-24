@@ -1,0 +1,136 @@
+;;;  Name: Naval Handa
+;;;  Email: nhanda@berkeley.edu
+
+;;; Q1.
+
+(fact (add-to-all ?val (?b) ((?val . ?b))))
+(fact (add-to-all ?val (?x . ?y) ((?val . ?x) . ?v))
+      (add-to-all ?val ?y ?v))
+
+(query (add-to-all a ((b) (c d)) ((a b) (a c d))))
+; expect Success!
+(query (add-to-all a ((b c) (b) (foo)) ?what))
+; expect Success! ; what: ((a b c) (a b) (a foo))
+(query (add-to-all ?what ((c) (d e) ()) ((b c) (b d e) (b))))
+; expect Success! ; what: b
+(query (add-to-all ?what ?list ((b c) (d e) (b))))
+; expect Failed.
+
+;;; Q2.
+
+(fact (append () ?a ?a))
+(fact (append (?x . ?r) ?b (?x . ?c))
+      (append ?r ?b ?c))
+
+(fact (sublists () (())))
+(fact (sublists (?first . ?rest) ?sublists)
+      (add-to-all ?first ?sublists1 ?sublists2)
+      (sublists ?rest ?sublists1)
+      (append ?sublists1 ?sublists2 ?sublists))
+
+
+(query (sublists (1 2 3) ?subs))
+; expect Success! ; subs: (() (3) (2) (2 3) (1) (1 3) (1 2) (1 2 3))
+
+;;; Q3.
+
+(fact (fruits apple banana cherry date elderberry fig guava))
+
+(fact (isatail ?x ?x))
+(fact (isatail (?x . ?y) ?a)
+      (isatail ?y ?a))
+
+(fact (fruits-tail . ?x)
+      (fruits . ?rest)
+      (isatail ?rest ?x))
+
+(query (fruits-tail date elderberry fig guava))
+; expect Success!
+(query (fruits-tail banana . ?after-banana))
+; expect Success! ; after-banana: (cherry date elderberry fig guava)
+(query (fruits-tail ?e fig guava))
+; expect Success! ; e: elderberry
+
+;;; Q4.
+
+(fact (prefix () ?s))
+(fact (prefix (?first . ?p) (?first . ?s))
+      (prefix ?p ?s))
+
+(fact (notempty (?first . ?rest)))
+
+(fact (getmiddle ?x ?x ()))
+(fact (getmiddle (?a . ?b) ?y (?a . ?z))
+      (getmiddle ?b ?y ?z))
+
+(fact (fruit-range ?start ?stop ?middle)
+      (notempty ?middle)
+      (fruits-tail ?start . ?rest1)
+      (fruits-tail ?stop . ?rest2)
+      (getmiddle ?rest1 (?stop . ?rest2) ?middle))
+
+(query (fruit-range cherry guava (date elderberry fig)))
+; expect Success!
+(query (fruit-range cherry elderberry date))
+; expect Failed.
+(query (fruit-range cherry elderberry ?between))
+; expect Success! ; between: (date)
+(query (fruit-range cherry date ()))
+; expect Failed.
+(query (fruit-range banana fig ?between))
+; expect Success! ; between: (cherry date elderberry)
+
+;;; Q5.
+
+;  sentence : optional-article noun verb optional-article noun
+;  optional-article : "the" | <empty>
+;  noun : "boy" | "cat"
+;  verb : "carries" | "feeds"
+
+
+; logic> (query (noun (boy feeds cat) (feeds cat)))
+; Success!
+; logic> (query (sentence (the boy feeds the cat and so forth) (and so forth)))
+; Success!
+; logic> (query (noun (boy cat feeds) ?r))
+; Success!
+; r: (cat feeds)
+; logic> (query (optional-article (a boy) (boy)))
+; Success!
+; logic> (query (optional-article (cat feeds boy) (cat feeds boy)))
+; Success!
+
+
+(fact (noun (boy . ?r) ?r))
+(fact (noun (cat . ?r) ?r))
+(fact (verb (carries . ?r) ?r))
+(fact (verb (feeds . ?r) ?r))
+
+(fact (optional-article (the . ?r) ?r))
+(fact (optional-article ?r ?r))
+
+(fact (sentence ?x ?y)
+      (optional-article ?x ?a)
+      (noun ?a ?b)
+      (verb ?b ?c)
+      (optional-article ?c ?d)
+      (noun ?d ?y))
+
+
+(query (optional-article (the boy) (boy)))
+; expect Success!
+(query (optional-article (cat feeds boy) (cat feeds boy)))
+; expect Success!
+(query (optional-article (the cat feeds boy) (cat feeds boy)))
+; expect Success!
+(query (optional-article (the cat feeds boy) (the cat feeds boy)))
+; expect Success!
+(query (optional-article (feeds boy) ?x))
+; expect Success! ; x: (feeds boy)
+(query (optional-article ?x (cat feeds boy)))
+; expect Success! ; x: (cat feeds boy) ; x: (the cat feeds boy)
+(query (sentence (the boy carries cat) ()))
+; expect Success!
+(query (sentence (the ?sub carries the ?obj) ()))
+; expect Success! ; sub: boy	obj: boy ; sub: boy	obj: cat ; sub: cat	obj: boy ; sub: cat	obj: cat
+
